@@ -1,0 +1,61 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+* { box-sizing: border-box; }
+body { margin: 0; font-family: 'Segoe UI', system-ui, sans-serif; }
+
+/* Print */
+@media print {
+  body * { visibility: hidden !important; }
+  .print-area, .print-area * { visibility: visible !important; }
+  .print-area { position: absolute; left: 0; top: 0; width: 100%; }
+  .no-print { display: none !important; }
+}
+.print-kot { width: 58mm; font-size: 12px; }
+.print-bill { width: 80mm; font-size: 13px; }
+.print-area { font-family: monospace; }
+.print-area table { width: 100%; border-collapse: collapse; }
+.print-area th, .print-area td { border-bottom: 1px dashed #000; padding: 2px 0; }
+
+/* ===== MOBILE & TABLET FIX - FINAL CORRECTED ===== */
+html, body {
+  overflow-x: hidden;
+  width: 100%;
+}
+
+@media (max-width: 1024px) {
+  /* Flex row ko column banao - Isi se masla hal hoga */
+  .flex {
+    flex-direction: column !important;
+  }
+  .h-screen {
+    height: auto !important;
+    min-height: 100vh !important;
+  }
+  #root {
+    height: auto !important;
+    overflow-y: auto !important;
+  }
+}
+
+@media (max-width: 768px) {
+  /* Sidebar upar full width */
+  aside {
+    width: 100% !important;
+    height: auto !important;
+    position: relative !important;
+  }
+  /* Main content neeche full width */
+  main, .flex-1 {
+    width: 100% !important;
+    margin-left: 0 !important;
+  }
+  /* Tables Mobile pe 2 columns - Sirf POS ke andar */
+  div[class*="grid-cols-3"], div[class*="grid-cols-4"] {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+  button {
+    min-height: 44px;
+  }
+}
