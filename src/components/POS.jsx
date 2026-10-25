@@ -7,6 +7,8 @@ export default function POS() {
   const [orderType, setOrderType] = useState('Dine-In')
   const [cat, setCat] = useState('All')
   const [showCart, setShowCart] = useState(false)
+  const [customerName, setCustomerName] = useState('')
+  const [amountPaid, setAmountPaid] = useState('')
 
   const effectiveTable = useMemo(() => {
     if (orderType === 'Takeaway') return 'Takeaway'
@@ -24,56 +26,65 @@ export default function POS() {
 
   const order = tableOrder(effectiveTable)
   const totals = calcTotal(order)
+  const paid = Number(amountPaid) || 0
+  const due = Math.max(0, totals.total - paid)
+  const ret = Math.max(0, paid - totals.total)
 
   const printKOT = () => {
     if(order.items.length===0) return alert('Empty order!')
     if(addToKitchen) addToKitchen(effectiveTable, order, orderType)
-    const w = window.open('', '_blank', 'width=380,height=700')
-    if(!w) return alert('Please allow popup!')
     const time = new Date().toLocaleString()
     const kotNo = `KOT-${Date.now().toString().slice(-5)}`
-    w.document.write(`
+    const html = `
       <html><head><title>KOT</title>
       <style>
         @page{size:80mm auto;margin:2mm}
-        body{font-family:monospace;width:72mm;margin:0 auto;padding:8px;font-size:12px}
+        body{font-family:monospace;width:72mm;margin:0 auto;padding:8px;font-size:12px;color:#000}
         .header{text-align:center;border-bottom:3px double #000;padding-bottom:10px}
         .kot{background:#000;color:#fff;padding:6px 14px;font-weight:900;font-size:16px;border-radius:6px;display:inline-block;margin:6px 0}
         .big{font-size:18px;font-weight:900}
         .row{padding:5px 0;border-bottom:1px dashed #ccc;display:flex;justify-content:space-between;font-size:13px;font-weight:700}
       </style></head><body>
-      <div class="header"><div>KITCHEN ORDER TICKET</div><div class="kot">${kotNo}</div><div class="big">${orderType} - ${effectiveTable}</div><div>${time}</div></div>
+      <div class="header"><div>KITCHEN ORDER TICKET</div><div class="kot">${kotNo}</div><div class="big">${orderType} - ${effectiveTable}</div><div>Customer: ${customerName || 'Walk-in'}</div><div>${time}</div></div>
       <div style="margin:10px 0">${order.items.map((it,i)=>`<div class="row"><span>${i+1}. ${it.qty} x ${it.name}</span><span>${it.qty}</span></div>`).join('')}</div>
       <div style="text-align:center;margin-top:12px;border-top:2px solid #000;padding-top:8px;font-weight:900">TOTAL ITEMS: ${order.items.reduce((a,b)=>a+b.qty,0)}<br/>KITCHEN COPY</div>
-      <script>window.onload=function(){setTimeout(function(){window.print();},400)}</script>
-      </body></html>`)
-    w.document.close()
+      </body></html>`
+    const w = window.open('', '_blank', 'width=380,height=700')
+    if(!w) return alert('Please allow popup!')
+    w.document.open(); w.document.write(html); w.document.close()
+    setTimeout(()=>{ w.focus(); w.print(); }, 600)
   }
 
   const handleCheckoutAndPrint = () => {
     if(order.items.length===0) return alert('Empty order!')
-    const w = window.open('', '_blank', 'width=380,height=800')
-    if(!w) return alert('Please allow popup!')
     const time = new Date().toLocaleString()
     const billNo = `MFF-${Date.now().toString().slice(-6)}`
-    w.document.write(`
+    const html = `
       <html><head><title>BILL</title>
       <style>
         @page{size:80mm auto;margin:2mm}
-        body{font-family:monospace;width:72mm;margin:0 auto;padding:8px;font-size:11px}
+        body{font-family:monospace;width:72mm;margin:0 auto;padding:8px;font-size:11px;color:#000}
         .center{text-align:center}.line{border-top:1px dashed #000;margin:6px 0}.bold{font-weight:900}.row{display:flex;justify-content:space-between;padding:3px 0}.big{font-size:16px;font-weight:900}
       </style></head><body>
-      <div class="center"><div style="font-size:18px;font-weight:900">${settings?.shopName || 'Mr Fast Food'}</div><div>Bill No: ${billNo}</div><div>${orderType} - ${effectiveTable}</div><div>${time}</div></div>
+      <div class="center"><div style="font-size:18px;font-weight:900">${settings?.shopName || 'Mr Fast Food'}</div><div>Bill No: ${billNo}</div><div>${orderType} - ${effectiveTable}</div><div>Customer: ${customerName || 'Walk-in Customer'}</div><div>${time}</div></div>
       <div class="line"></div>${order.items.map(it=>`<div class="row"><span>${it.qty} x ${it.name}</span><span>Rs ${it.qty*it.price}</span></div>`).join('')}<div class="line"></div>
       <div class="row"><span>Subtotal</span><span>Rs ${totals.subtotal}</span></div>
       ${totals.discountAmount>0?`<div class="row"><span>Discount</span><span>-Rs ${totals.discountAmount}</span></div>`:''}
       ${totals.serviceCharge>0?`<div class="row"><span>Extra</span><span>+Rs ${totals.serviceCharge}</span></div>`:''}
-      <div class="line"></div><div class="row big"><span>TOTAL</span><span>Rs ${totals.total}</span></div><div class="line"></div>
+      <div class="line"></div><div class="row big"><span>TOTAL</span><span>Rs ${totals.total}</span></div>
+      <div class="row"><span>Paid</span><span>Rs ${paid}</span></div>
+      <div class="row bold"><span>${due>0?'Due':'Return'}</span><span>Rs ${due>0?due:ret}</span></div>
+      <div class="line"></div>
       <div class="center bold">Shukria! Dobara Tashreef Lain!</div>
-      <script>window.onload=function(){setTimeout(function(){window.print();},500)}</script>
-      </body></html>`)
-    w.document.close()
-    setTimeout(()=>{ checkout(effectiveTable, 'Cash', totals.total, orderType); setShowCart(false) }, 1000)
+      </body></html>`
+    const w = window.open('', '_blank', 'width=380,height=800')
+    if(!w) return alert('Please allow popup!')
+    w.document.open(); w.document.write(html); w.document.close()
+    setTimeout(()=>{ w.focus(); w.print(); }, 600)
+    setTimeout(()=>{ 
+      checkout(effectiveTable, 'Cash', totals.total, orderType, customerName, paid, due); 
+      setCustomerName(''); setAmountPaid(''); setShowCart(false) 
+    }, 1000)
   }
 
   return (
@@ -121,11 +132,14 @@ export default function POS() {
           <div style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:'8px'}}>
             {tableNames.map(t=>{
               const o = tables[t]; const count = o?.items?.length||0; const isActive = effectiveTable===t; const isOpen = count>0;
+              const tTotal = o ? calcTotal(o).total : 0
+              const tName = o?.customerName || ''
               return (
-                <div key={t} onClick={()=>{setActiveTable(t); setOrderType('Dine-In')}} style={{padding:'14px 8px', borderRadius:'12px', cursor:'pointer', textAlign:'center', background: isOpen ? '#e11d48' : isActive ? '#0f172a' : 'white', color: isOpen || isActive ? 'white' : '#475569', border: isOpen ? '2px solid #be123c' : isActive ? '2px solid #0f172a' : '1px solid #e2e8f0', fontWeight: isOpen ? '800' : '600', fontSize:'12px'}}>
+                <div key={t} onClick={()=>{setActiveTable(t); setOrderType('Dine-In'); setCustomerName(tables[t]?.customerName||'')}} style={{padding:'10px 8px', borderRadius:'12px', cursor:'pointer', textAlign:'center', background: isOpen ? '#e11d48' : isActive ? '#0f172a' : 'white', color: isOpen || isActive ? 'white' : '#475569', border: isOpen ? '2px solid #be123c' : isActive ? '2px solid #0f172a' : '1px solid #e2e8f0', fontWeight: isOpen ? '800' : '600', fontSize:'12px'}}>
                   <div style={{fontSize:'9px', opacity: isActive||isOpen ? 0.9 : 0.6}}>{isOpen ? '🔴 OPEN' : isActive ? '⚫ ACTIVE' : '○ EMPTY'}</div>
                   <div style={{marginTop:'4px', fontSize:'13px'}}>{t}</div>
-                  {count>0 && <div style={{marginTop:'4px', background:'white', color:'#e11d48', borderRadius:'12px', padding:'2px 6px', display:'inline-block', fontSize:'11px', fontWeight:'900'}}>{count} Items</div>}
+                  {tName && <div style={{fontSize:'10px', marginTop:'2px', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis'}}>{tName}</div>}
+                  {count>0 && <div style={{marginTop:'4px', background:'white', color:'#e11d48', borderRadius:'12px', padding:'2px 6px', display:'inline-block', fontSize:'10px', fontWeight:'900'}}>{count} Items • Rs {tTotal}</div>}
                 </div>
               )
             })}
@@ -178,6 +192,17 @@ export default function POS() {
             <button onClick={()=>setShowCart(false)} className="mobile-only" style={{background:'rgba(255,255,255,0.2)', border:'none', color:'white', width:'28px', height:'28px', borderRadius:'50%'}}>✕</button>
           </div>
         </div>
+
+        <div style={{padding:'10px', background:'#fff', borderBottom:'1px solid #fecdd3', display:'flex', flexDirection:'column', gap:'8px'}}>
+          <input value={customerName} onChange={e=>setCustomerName(e.target.value)} placeholder="👤 Customer Name (e.g. Ali Bhai)" style={{padding:'10px', borderRadius:'10px', border:'1.5px solid #fecdd3', fontSize:'13px', fontWeight:600, outline:'none'}}/>
+          <div style={{display:'flex', gap:'6px'}}>
+            <input type="number" value={amountPaid} onChange={e=>setAmountPaid(e.target.value)} placeholder="💵 Amount Paid" style={{flex:1, padding:'10px', borderRadius:'10px', border:'1.5px solid #fecdd3', fontSize:'13px', outline:'none'}}/>
+            <div style={{flex:1, background: paid ? (due>0 ? '#fee2e2' : '#dcfce7') : '#f8fafc', color: paid ? (due>0 ? '#dc2626' : '#16a34a') : '#64748b', padding:'10px', borderRadius:'10px', textAlign:'center', fontSize:'12px', fontWeight:900, border:'1px solid #e2e8f0'}}>
+              {paid ? (due>0 ? `Due: Rs ${due}` : `Return: Rs ${ret}`) : `Due: Rs ${totals.total}`}
+            </div>
+          </div>
+        </div>
+
         <div style={{flex:1, overflowY:'auto', padding:'10px'}}>
           {order.items.length===0 ? <div style={{textAlign:'center', padding:'30px', color:'#999'}}>🛒 Cart khali hai</div> :
             order.items.map(i=>(
@@ -197,6 +222,8 @@ export default function POS() {
           </div>
           <div style={{background:'white', borderRadius:'12px', padding:'10px', border:'1px solid #fecdd3'}}>
             <div style={{display:'flex', justifyContent:'space-between', fontSize:'11px'}}><span>Subtotal</span><span>Rs {totals.subtotal}</span></div>
+            <div style={{display:'flex', justifyContent:'space-between', fontSize:'12px', marginTop:'4px'}}><span>Paid</span><span>Rs {paid}</span></div>
+            <div style={{display:'flex', justifyContent:'space-between', fontSize:'12px', fontWeight:800, color: due>0 ? '#dc2626' : '#16a34a'}}><span>{due>0 ? 'Due' : 'Return'}</span><span>Rs {due>0 ? due : ret}</span></div>
             <div style={{display:'flex', justifyContent:'space-between', fontWeight:900, fontSize:'18px', background:'#0f172a', color:'white', padding:'10px 12px', borderRadius:'10px', marginTop:'6px'}}><span>TOTAL</span><span>Rs {totals.total}</span></div>
           </div>
           <div style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:'8px', marginTop:'10px'}}>
