@@ -29,22 +29,51 @@ export default function POS() {
     if(order.items.length===0) return alert('Empty order!')
     if(addToKitchen) addToKitchen(effectiveTable, order, orderType)
     const w = window.open('', '_blank', 'width=380,height=700')
-    if(!w) return alert('Please allow popup for printing!')
+    if(!w) return alert('Please allow popup!')
     const time = new Date().toLocaleString()
     const kotNo = `KOT-${Date.now().toString().slice(-5)}`
-    w.document.write(`<html><head><title>KOT</title><style>body{font-family:monospace; width:320px; margin:0 auto; padding:12px} .header{text-align:center; border-bottom:3px double #000; padding-bottom:10px} .kot{background:#000; color:#fff; padding:8px 16px; font-weight:900; font-size:18px; border-radius:6px; display:inline-block; margin:8px 0} .big{font-size:22px; font-weight:900} .row{padding:6px 0; border-bottom:1px dashed #ccc; display:flex; justify-content:space-between; font-size:14px; font-weight:700}</style></head><body><div class="header"><div>KITCHEN ORDER TICKET</div><div class="kot">${kotNo}</div><div class="big">${orderType} - ${effectiveTable}</div><div>⏰ ${time}</div></div><div style="margin:12px 0">${order.items.map((it,i)=>`<div class="row"><span>${i+1}. ${it.qty} x ${it.name}</span><span>${it.qty}</span></div>`).join('')}</div><div style="text-align:center; margin-top:16px; border-top:2px solid #000; padding-top:10px; font-weight:900">TOTAL ITEMS: ${order.items.reduce((a,b)=>a+b.qty,0)}<br/>KITCHEN COPY</div><script>window.print(); setTimeout(()=>window.close(),500)</script></body></html>`)
+    w.document.write(`
+      <html><head><title>KOT</title>
+      <style>
+        @page{size:80mm auto;margin:2mm}
+        body{font-family:monospace;width:72mm;margin:0 auto;padding:8px;font-size:12px}
+        .header{text-align:center;border-bottom:3px double #000;padding-bottom:10px}
+        .kot{background:#000;color:#fff;padding:6px 14px;font-weight:900;font-size:16px;border-radius:6px;display:inline-block;margin:6px 0}
+        .big{font-size:18px;font-weight:900}
+        .row{padding:5px 0;border-bottom:1px dashed #ccc;display:flex;justify-content:space-between;font-size:13px;font-weight:700}
+      </style></head><body>
+      <div class="header"><div>KITCHEN ORDER TICKET</div><div class="kot">${kotNo}</div><div class="big">${orderType} - ${effectiveTable}</div><div>${time}</div></div>
+      <div style="margin:10px 0">${order.items.map((it,i)=>`<div class="row"><span>${i+1}. ${it.qty} x ${it.name}</span><span>${it.qty}</span></div>`).join('')}</div>
+      <div style="text-align:center;margin-top:12px;border-top:2px solid #000;padding-top:8px;font-weight:900">TOTAL ITEMS: ${order.items.reduce((a,b)=>a+b.qty,0)}<br/>KITCHEN COPY</div>
+      <script>window.onload=function(){setTimeout(function(){window.print();},400)}</script>
+      </body></html>`)
     w.document.close()
   }
 
   const handleCheckoutAndPrint = () => {
     if(order.items.length===0) return alert('Empty order!')
     const w = window.open('', '_blank', 'width=380,height=800')
-    if(!w) return alert('Please allow popup for printing!')
+    if(!w) return alert('Please allow popup!')
     const time = new Date().toLocaleString()
     const billNo = `MFF-${Date.now().toString().slice(-6)}`
-    w.document.write(`<html><head><title>BILL</title><style>body{font-family:monospace; width:300px; margin:0 auto; padding:10px; font-size:12px} .center{text-align:center} .line{border-top:1px dashed #000; margin:8px 0} .bold{font-weight:900} .row{display:flex; justify-content:space-between; padding:2px 0} .big{font-size:18px; font-weight:900}</style></head><body><div class="center"><div style="font-size:20px; font-weight:900">${settings?.shopName || 'Mr Fast Food'}</div><div>Bill No: ${billNo}</div><div>${orderType} - ${effectiveTable}</div><div>${time}</div></div><div class="line"></div>${order.items.map(it=>`<div class="row"><span>${it.qty} x ${it.name}</span><span>Rs ${it.qty*it.price}</span></div>`).join('')}<div class="line"></div><div class="row"><span>Subtotal</span><span>Rs ${totals.subtotal}</span></div>${totals.discountAmount>0?`<div class="row"><span>Discount</span><span>-Rs ${totals.discountAmount}</span></div>`:''}${totals.serviceCharge>0?`<div class="row"><span>Extra</span><span>+Rs ${totals.serviceCharge}</span></div>`:''}<div class="line"></div><div class="row big"><span>TOTAL</span><span>Rs ${totals.total}</span></div><div class="line"></div><div class="center bold">Shukria! Dobara Tashreef Lain!</div><script>window.print(); setTimeout(()=>window.close(),800)</script></body></html>`)
+    w.document.write(`
+      <html><head><title>BILL</title>
+      <style>
+        @page{size:80mm auto;margin:2mm}
+        body{font-family:monospace;width:72mm;margin:0 auto;padding:8px;font-size:11px}
+        .center{text-align:center}.line{border-top:1px dashed #000;margin:6px 0}.bold{font-weight:900}.row{display:flex;justify-content:space-between;padding:3px 0}.big{font-size:16px;font-weight:900}
+      </style></head><body>
+      <div class="center"><div style="font-size:18px;font-weight:900">${settings?.shopName || 'Mr Fast Food'}</div><div>Bill No: ${billNo}</div><div>${orderType} - ${effectiveTable}</div><div>${time}</div></div>
+      <div class="line"></div>${order.items.map(it=>`<div class="row"><span>${it.qty} x ${it.name}</span><span>Rs ${it.qty*it.price}</span></div>`).join('')}<div class="line"></div>
+      <div class="row"><span>Subtotal</span><span>Rs ${totals.subtotal}</span></div>
+      ${totals.discountAmount>0?`<div class="row"><span>Discount</span><span>-Rs ${totals.discountAmount}</span></div>`:''}
+      ${totals.serviceCharge>0?`<div class="row"><span>Extra</span><span>+Rs ${totals.serviceCharge}</span></div>`:''}
+      <div class="line"></div><div class="row big"><span>TOTAL</span><span>Rs ${totals.total}</span></div><div class="line"></div>
+      <div class="center bold">Shukria! Dobara Tashreef Lain!</div>
+      <script>window.onload=function(){setTimeout(function(){window.print();},500)}</script>
+      </body></html>`)
     w.document.close()
-    setTimeout(()=>{ checkout(effectiveTable, 'Cash', totals.total, orderType); setShowCart(false) }, 500)
+    setTimeout(()=>{ checkout(effectiveTable, 'Cash', totals.total, orderType); setShowCart(false) }, 1000)
   }
 
   return (
